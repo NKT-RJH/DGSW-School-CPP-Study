@@ -1,9 +1,10 @@
 #include <iostream>
 using namespace std;
+using namespace RespondError;
+using namespace Tools;
 
-class RespondError
+namespace RespondError
 {
-public:
 	template <typename T>
 	static bool LowCheck(T value, const char* variableName)
 	{
@@ -29,9 +30,8 @@ public:
 	}
 };
 
-class Tools
+namespace Tools
 {
-public:
 	template <typename T>
 	static void InputQuestionResult(const char* question, T* storage)
 	{
@@ -41,7 +41,7 @@ public:
 
 			cin >> *storage;
 
-			if (RespondError::NormalizedInput()) break;
+			if (NormalizedInput()) break;
 		}
 	}
 
@@ -54,7 +54,7 @@ public:
 
 			cin >> *storage;
 
-			if (RespondError::NormalizedInput())
+			if (NormalizedInput())
 			{
 				if (storage >= min && storage <= max)
 				{
@@ -73,9 +73,14 @@ public:
 	BankingAccount(string* name, int id, double money, int month, double interest, double tax)
 		: name(name), id(id), money(money), month(month), interest(interest), tax(tax) {}
 
+	~BankingAccount()
+	{
+		delete(name);
+	}
+
 	bool SetID(int value)
 	{
-		if (RespondError::LowCheck(value, "ID")) return false;
+		if (LowCheck(value, "ID")) return false;
 
 		id = value;
 
@@ -91,7 +96,7 @@ public:
 	}
 	bool SetMoney(double value)
 	{
-		if (RespondError::LowCheck(value, "Money")) return false;
+		if (LowCheck(value, "Money")) return false;
 
 		money = value;
 
@@ -99,7 +104,7 @@ public:
 	}
 	bool SetMonth(int value)
 	{
-		if (RespondError::LowCheck(value, "Month")) return false;
+		if (LowCheck(value, "Month")) return false;
 
 		month = value;
 
@@ -107,7 +112,7 @@ public:
 	}
 	bool SetInterest(double value)
 	{
-		if (RespondError::LowCheck(value, "Interest")) return false;
+		if (LowCheck(value, "Interest")) return false;
 
 		interest = value;
 
@@ -115,7 +120,7 @@ public:
 	}
 	bool SetTax(double value)
 	{
-		if (RespondError::LowCheck(value, "Tax")) return false;
+		if (LowCheck(value, "Tax")) return false;
 
 		tax = value;
 
@@ -124,31 +129,31 @@ public:
 	
 	unsigned int GetID() const
 	{
-		if (RespondError::LowCheck(id, "id")) return -1;
+		if (LowCheck(id, "id")) return -1;
 
 		return id;
 	}
 	double GetMoney() const
 	{
-		if (RespondError::LowCheck(money, "Money")) return -1;
+		if (LowCheck(money, "Money")) return -1;
 
 		return money;
 	}
 	int GetMonth() const
 	{
-		if (RespondError::LowCheck(month, "Month")) return -1;
+		if (LowCheck(month, "Month")) return -1;
 
 		return month;
 	}
 	double GetInterest() const
 	{
-		if (RespondError::LowCheck(interest, "Interest")) return -1;
+		if (LowCheck(interest, "Interest")) return -1;
 
 		return interest;
 	}
 	double GetTax() const
 	{
-		if (RespondError::LowCheck(tax, "Tax")) return -1;
+		if (LowCheck(tax, "Tax")) return -1;
 
 		return tax;
 	}
@@ -194,10 +199,10 @@ public:
 
 	double Calcurate()
 	{
-		if (RespondError::LowCheck(money, "Money")) return -1;
-		if (RespondError::LowCheck(month, "Month")) return -1;
-		if (RespondError::LowCheck(interest, "Interest")) return -1;
-		if (RespondError::LowCheck(tax, "Tax")) return -1;
+		if (LowCheck(money, "Money")) return -1;
+		if (LowCheck(month, "Month")) return -1;
+		if (LowCheck(interest, "Interest")) return -1;
+		if (LowCheck(tax, "Tax")) return -1;
 
 		double totalMoney = money * month;
 
@@ -239,9 +244,9 @@ public:
 
 	double Calcurate()
 	{
-		if (RespondError::LowCheck(money, "Money")) return -1;
-		if (RespondError::LowCheck(interest, "Interest")) return -1;
-		if (RespondError::LowCheck(month, "Month")) return -1;
+		if (LowCheck(money, "Money")) return -1;
+		if (LowCheck(interest, "Interest")) return -1;
+		if (LowCheck(month, "Month")) return -1;
 
 		double result = money * pow((formulaConstant + interest / percentage / monthCount), month);
 
@@ -263,7 +268,7 @@ int main()
 
 		cin >> id;
 
-		RespondError::NormalizedInput();
+		NormalizedInput();
 
 		if (bankingAccount.SetID(id)) break;
 	}
@@ -275,7 +280,7 @@ int main()
 
 		cin >> name;
 
-		RespondError::NormalizedInput();
+		NormalizedInput();
 
 		if (bankingAccount.SetName(name)) break;
 	}
@@ -286,11 +291,11 @@ int main()
 	deposit.SetInterest(3);
 
 	double depositMoney;
-	Tools::InputQuestionResult("[예금] 얼마나 입금하시겠습니까? : ", &depositMoney);
+	InputQuestionResult("[예금] 얼마나 입금하시겠습니까? : ", &depositMoney);
 	deposit.SetMoney(depositMoney);
 
 	int depositMonth;
-	Tools::InputQuestionResult("[예금] 만기 개월은 얼마로 하시겠습니까? : ", &depositMonth);
+	InputQuestionResult("[예금] 만기 개월은 얼마로 하시겠습니까? : ", &depositMonth);
 	deposit.SetMonth(depositMonth);
 	//--------------------------------------------------------------------------------------
 
@@ -300,11 +305,11 @@ int main()
 	savings.SetInterest(4);
 
 	double savingsMoney;
-	Tools::InputQuestionResult("[적금] 매 달 얼마나 입금하시겠습니까? : ", &savingsMoney);
+	InputQuestionResult("[적금] 매 달 얼마나 입금하시겠습니까? : ", &savingsMoney);
 	savings.SetMoney(savingsMoney);
 
 	int savingsMonth;
-	Tools::InputQuestionResult("[적금] 입금을 몇 개월 동안 하시겠습니까? : ", &savingsMonth);
+	InputQuestionResult("[적금] 입금을 몇 개월 동안 하시겠습니까? : ", &savingsMonth);
 	savings.SetMonth(savingsMonth);
 	//--------------------------------------------------------------------------------------
 
