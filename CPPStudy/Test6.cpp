@@ -137,19 +137,22 @@ private:
 class SalaryCalcurator
 {
 public:
-	double Job(double salary, Insurance nationalPension, Insurance healthInsurance, 
+	double JobAndPrint(double salary, Insurance nationalPension, Insurance healthInsurance, 
 		Insurance longTermNursingInsurance, Insurance employmentInsurance, 
 		double incomeTax, double localIncomeTax, int taxFreeCount, TaxFree ...)
 	{
 		va_list taxFreeList;
 		va_start(taxFreeList, taxFreeCount);
 
+		double totalTaxFree = 0;
+
 		for (int count = 0; count < taxFreeCount; count++)
 		{
 			TaxFree taxFree = va_arg(taxFreeList, TaxFree);
-			salary -= taxFree.GetMoney();
+			totalTaxFree += taxFree.GetMoney();
 		}
-		//cout << fixed << salary << endl;
+		
+		salary -= totalTaxFree;
 
 		double insuranceCost1 = nationalPension.Calcurate(salary);
 		double insuranceCost2 = healthInsurance.Calcurate(salary);
@@ -157,13 +160,20 @@ public:
 		double insuranceCost4 = employmentInsurance.Calcurate(salary);
 
 		salary -= insuranceCost1 + insuranceCost2 + insuranceCost3 + insuranceCost4;
-		//salary -= nationalPension + healthInsurance + longTermNursingInsurance + employmentInsurance;
 
-		//cout << fixed << salary << endl;
 		salary -= incomeTax + localIncomeTax;
 
-		//cout << fixed << salary << endl;
+		salary += totalTaxFree;
+
 		result = salary;
+
+		cout << fixed << "국민연금 : " << insuranceCost1 << endl;
+		cout << fixed << "건강보험 : " << insuranceCost2 << endl;
+		cout << fixed << "국민연금 : " << insuranceCost3 << endl;
+		cout << fixed << "국민연금 : " << insuranceCost4 << endl;
+		cout << fixed << "소득세 : " << incomeTax << endl;
+		cout << fixed << "지방소득세 : " << localIncomeTax << endl;
+		cout << fixed << "월급 : " << salary << endl;
 
 		return salary;
 	}
@@ -222,17 +232,10 @@ int main()
 
 	tax.SetIncomeTax(Input<double>("소득세를 입력하세요 (원) : "));
 
-	/*double calcurate1 = nationalPension.Calcurate(person.GetSalary());
-	double calcurate2 = healthInsurance.Calcurate(person.GetSalary());
-	double calcurate3 = longTermNursingInsurance.Calcurate(calcurate2);
-	double calcurate4 = employmentInsurance.Calcurate(person.GetSalary());*/
-
-	salaryCalcurator.Job(person.GetSalary(),
+	salaryCalcurator.JobAndPrint(person.GetSalary(),
 		nationalPension, healthInsurance, longTermNursingInsurance, employmentInsurance,
 		tax.GetIncomeTax(), tax.GetLocalIncomeTax(),
 		2, mealPrice, researchAndDevelopmentCost);
-
-	cout << fixed << salaryCalcurator.GetBeforeJob() << endl;
 
 	return 0;
 }
