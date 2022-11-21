@@ -2,7 +2,7 @@
 #include <cstdarg>
 using namespace std;
 
-#define YearCount 12
+#define YEAR2MONTH 12
 
 //국민연금 : 월 소득액 4.5%
 //건강보험 : 보수월액의 3.495%
@@ -112,13 +112,13 @@ public:
 
 	Person(double annualSalary) : annualSalary(annualSalary)
 	{
-		salary = annualSalary / YearCount;
+		salary = annualSalary / YEAR2MONTH;
 	}
 
 	void SetAnnualSalary(double value)
 	{
 		annualSalary = value;
-		salary = value / YearCount;
+		salary = value / YEAR2MONTH;
 	}
 
 	double GetSalary() const
