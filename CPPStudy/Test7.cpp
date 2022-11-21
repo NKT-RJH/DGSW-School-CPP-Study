@@ -3,6 +3,7 @@ using namespace std;
 
 #define YEAR2MONTH 12
 #define HUNDRED 100
+#define TEN 10
 
 namespace Tools
 {
@@ -731,6 +732,8 @@ public:
 	SavingMoney(int id, int year, double money, double interest, double tax)
 		: id(id), year(year), money(money), interest(interest), tax(tax) {}
 
+	virtual double Calcurate() const = 0;
+
 	void SetID(int value)
 	{
 		id = value;
@@ -797,11 +800,13 @@ public:
 		tax = object.tax;
 	}
 
-	double Calcurate()
+	double Calcurate() const override
 	{
-		double totalMoney = money * year;
+		int month = year * YEAR2MONTH;
 
-		double interestAddTax = (interest * (YEAR2MONTH + formulaConstant1) / formulaConstant2) * (formulaConstant3 - tax / HUNDRED);
+		double totalMoney = money * month;
+
+		double interestAddTax = (interest * (month + formulaConstant1) / formulaConstant2) * (formulaConstant3 - tax / HUNDRED);
 
 		double result = totalMoney * (formulaConstant4 + interestAddTax / HUNDRED);
 
@@ -831,16 +836,15 @@ public:
 		tax = object.tax;
 	}
 
-	double Calcurate()
+	double Calcurate() const override
 	{
 		double result = money * (formulaConstant + interest / HUNDRED) * year;
-		//double result = money * pow((formulaConstant + interest / HUNDRED / YEAR2MONTH), month);
 
 		return result;
 	}
 
 private:
-	const int formulaConstant = 1;
+	static const int formulaConstant = 1;
 };
 
 class Account
@@ -848,27 +852,31 @@ class Account
 public:
 	Account() = default;
 
+	Account(int id, string name, double annualSalary, double rateOfSalaryIncrease, double amountConsumed)
+		: id(id), name(name), annualSalary(annualSalary), rateOfSalaryIncrease(rateOfSalaryIncrease), amountConsumed(amountConsumed)
+	{
+		salary = annualSalary / YEAR2MONTH;
+	}
+	Account(int id, string name, double annualSalary, double rateOfSalaryIncrease, double amountConsumed, Savings savings)
+		: id(id), name(name), annualSalary(annualSalary), rateOfSalaryIncrease(rateOfSalaryIncrease), amountConsumed(amountConsumed), savings(savings)
+	{
+		salary = annualSalary / YEAR2MONTH;
+	}
+	Account(int id, string name, double annualSalary, double rateOfSalaryIncrease, double amountConsumed, Deposit deposit)
+		: id(id), name(name), annualSalary(annualSalary), rateOfSalaryIncrease(rateOfSalaryIncrease), amountConsumed(amountConsumed), deposit(deposit)
+	{
+		salary = annualSalary / YEAR2MONTH;
+	}
 	Account(int id, string name, double annualSalary, double rateOfSalaryIncrease, double amountConsumed, Savings savings, Deposit deposit)
 		: id(id), name(name), annualSalary(annualSalary), rateOfSalaryIncrease(rateOfSalaryIncrease), amountConsumed(amountConsumed), savings(savings), deposit(deposit)
 	{
 		salary = annualSalary / YEAR2MONTH;
-		savings = Savings();
 	}
-
-	/*Account operator=(const Account& object)
-	{
-		id = object.id;
-		name = object.name;
-		annualSalary = object.annualSalary;
-		rateOfSalaryIncrease = object.rateOfSalaryIncrease;
-		amountConsumed = object.amountConsumed;
-		savings = object.savings;
-		deposit = object.deposit;
-	}*/
 
 	void AYearLater()
 	{
-
+		annualSalary *= 1 + rateOfSalaryIncrease / HUNDRED;
+		salary = annualSalary / YEAR2MONTH;
 	}
 
 	bool HasSavings()
@@ -895,6 +903,22 @@ public:
 		annualSalary = value;
 		salary = value / YEAR2MONTH;
 	}
+	void SetRateOfSalaryIncrease(double value)
+	{
+		rateOfSalaryIncrease = value;
+	}
+	void SetAmountConsumed(double value)
+	{
+		amountConsumed = value;
+	}
+	void SetSavings(Savings value)
+	{
+		savings = value;
+	}
+	void SetDeposit(Deposit value)
+	{
+		deposit = value;
+	}
 
 	int GetID() const
 	{
@@ -916,9 +940,14 @@ public:
 	{
 		return savings;
 	}
+	Deposit GetDeposit() const
+	{
+		return deposit;
+	}
+
 private:
 	int id = 0;
-	string name;
+	string name = NULL;
 	double annualSalary = 0;
 	double salary = 0;
 	double rateOfSalaryIncrease = 0;
@@ -938,7 +967,7 @@ public:
 	{
 		accounts = new Account[length];
 	}
-	/*Bank(Account values[])
+	Bank(Account* values)
 	{
 		int length = sizeof(values) / sizeof(Account);
 
@@ -948,21 +977,10 @@ public:
 		{
 			accounts[count] = values[count];
 		}
-	}*/
+	}
 	~Bank()
 	{
 		delete[] accounts;
-	}
-	Bank(Account* values)
-	{
-		int length = sizeof(values) / sizeof(*values);
-
-		accounts = new Account[length];
-
-		for (int count = 0; count < length; count++)
-		{
-			accounts[count] = values[count];
-		}
 	}
 
 	void AddAccount(Account account)
@@ -1000,12 +1018,7 @@ public:
 	}
 
 private:
-	Account* accounts;
-	/*KeyValuePair<string,double>* moneies;
-	Savings* savings;
-	Deposit* deposits;*/
-
-	// 예금 적금 여부 및 계정 별 돈 
+	Account* accounts = nullptr;
 };
 
 class Insurance
@@ -1013,7 +1026,8 @@ class Insurance
 public:
 	Insurance() = default;
 
-	Insurance(string name, double rate) : name(name), rate(rate) {}
+	Insurance(string name, double rate)
+		: name(name), rate(rate) {}
 
 	void SetName(string value)
 	{
@@ -1038,10 +1052,10 @@ public:
 		return value * rate / percentage;
 	}
 private:
-	string name;
-	double rate;
+	string name = NULL;
+	double rate = 0;
 
-	const int percentage = 100;
+	static const int percentage = 100;
 };
 
 class TaxFree
@@ -1049,7 +1063,8 @@ class TaxFree
 public:
 	TaxFree() = default;
 
-	TaxFree(string name, double money) : name(name), money(money) {}
+	TaxFree(string name, double money)
+		: name(name), money(money) {}
 
 	void SetName(string value)
 	{
@@ -1069,8 +1084,8 @@ public:
 		return money;
 	}
 private:
-	string name;
-	double money;
+	string name = NULL;
+	double money = 0;
 };
 
 class Tax
@@ -1080,13 +1095,13 @@ public:
 
 	Tax(double incomeTax) : incomeTax(incomeTax)
 	{
-		localIncomeTax = incomeTax * localIncomeTaxPercentage;
+		localIncomeTax = incomeTax / TEN;
 	}
 
 	void SetIncomeTax(double value)
 	{
 		incomeTax = value;
-		localIncomeTax = value * localIncomeTaxPercentage;
+		localIncomeTax = value / TEN;
 	}
 
 	double GetIncomeTax() const
@@ -1100,8 +1115,20 @@ public:
 private:
 	double incomeTax = 0;
 	double localIncomeTax = 0;
+};
 
-	const double localIncomeTaxPercentage = 0.1;
+class MoneyManager
+{
+public:
+	MoneyManager() = default;
+
+	MoneyManager()
+	{
+		// 년도마다 계산하게 만들기
+	}
+
+private:
+	int managementPeriod;
 };
 
 using namespace Tools;
