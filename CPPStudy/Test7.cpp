@@ -1010,9 +1010,11 @@ public:
 
 	Account GetAccount(int number) const
 	{
+		if (accounts == nullptr) throw exception();
+
 		int length = sizeof(accounts) / sizeof(Account);
 
-		if (number >= length && number < 0) return;
+		if (number >= length && number < 0) throw out_of_range(NULL);
 	
 		return accounts[number];
 	}
@@ -1119,16 +1121,33 @@ private:
 
 class MoneyManager
 {
+	struct ManagementHistory
+	{
+		double moneyOfDepositMature;
+		double moneyOfSavingsMature;
+		double totalAsset;
+	};
+
 public:
 	MoneyManager() = default;
 
-	MoneyManager()
+	MoneyManager(int managementPeriod)
 	{
 		// 년도마다 계산하게 만들기
+		this->managementPeriod = managementPeriod;
 	}
 
+	void PrintManagementHistory()
+	{
+		// 여기에 계산식 프린트 넣고 아래에 계산해서 배열로 뱉는 함수 만든 뒤에 입력 받고 계산 잘 되는지만 확인하면 끝
+	}
+
+	
+		
 private:
 	int managementPeriod;
+
+	Account account;
 };
 
 using namespace Tools;
