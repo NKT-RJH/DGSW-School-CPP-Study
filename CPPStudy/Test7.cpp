@@ -1,9 +1,51 @@
 #include <iostream>
+#include <vector>
+#include <ctime>
 using namespace std;
 
 #define YEAR2MONTH 12
 #define HUNDRED 100
 #define TEN 10
+#define ONE 1
+#define COMPUTERSTARTYEAR 1900
+
+struct TaxBill
+{
+public:
+	int id = -1;
+
+	Tax tax;
+	
+	vector<TaxFree> taxFrees;
+	
+	Insurance nationalPension;
+	Insurance healthInsurance;
+	Insurance longTermNursingInsurance;
+	Insurance employmentInsurance;
+};
+
+struct ManagementHistory
+{
+public:
+	int year = -1;
+
+	double salary = 0;
+
+	double totalTaxFree = 0;
+
+	double nationalPension = 0;
+	double healthInsurance = 0;
+	double longTermNursingInsurance = 0;
+	double employmentInsurance = 0;
+
+	double incomeTax = 0;
+	double localIncomeTax = 0;
+
+	double moneyOfDepositMature = 0;
+	double moneyOfSavingsMature = 0;
+
+	double totalAsset = 0;
+};
 
 namespace Tools
 {
@@ -27,6 +69,15 @@ namespace Tools
 
 		return storage;
 	}
+
+	/*template<typename T>
+	vector<T> create_copy(vector<T> const& objects)
+	{
+		vector<T> vector;
+		vector = objects;
+
+		return vector;
+	}*/
 
 	template<typename Key, typename Value>
 	struct KeyValuePair
@@ -714,8 +765,13 @@ namespace IncomeTax
 				}
 			}
 			
-			result = this->result;
+			this->result = result;
 
+			return result;
+		}
+
+		int GetResult() const
+		{
 			return result;
 		}
 
@@ -732,7 +788,7 @@ public:
 	SavingMoney(int id, int year, double money, double interest, double tax)
 		: id(id), year(year), money(money), interest(interest), tax(tax) {}
 
-	virtual double Calcurate() const = 0;
+	virtual double Calcurate() = 0;
 
 	void SetID(int value)
 	{
@@ -784,7 +840,34 @@ protected:
 	double tax = 0;
 };
 
-class Savings : public SavingMoney// 적금
+class Deposit : public SavingMoney // 정기 예금
+{
+public:
+	Deposit() = default;
+
+	Deposit(int id, double money, int year, double interest, double tax)
+		: SavingMoney(id, money, year, interest, tax) {}
+
+	Deposit operator=(const Deposit& object)
+	{
+		id = object.id;
+		year = object.year;
+		interest = object.interest;
+		tax = object.tax;
+	}
+
+	double Calcurate() override
+	{
+		double result = money * (formulaConstant + interest / HUNDRED) * year;
+
+		return result;
+	}
+
+private:
+	static const int formulaConstant = 1;
+};
+
+class Savings : public SavingMoney // 정기 적금
 {
 public:
 	Savings() = default;
@@ -800,7 +883,7 @@ public:
 		tax = object.tax;
 	}
 
-	double Calcurate() const override
+	double Calcurate() override
 	{
 		int month = year * YEAR2MONTH;
 
@@ -818,33 +901,6 @@ private:
 	static const int formulaConstant2 = 24;
 	static const int formulaConstant3 = 1;
 	static const int formulaConstant4 = 1;
-};
-
-class Deposit : public SavingMoney// 정기 예금
-{
-public:
-	Deposit() = default;
-
-	Deposit(int id, double money, int year, double interest, double tax)
-		: SavingMoney(id, money, year, interest, tax) {}
-
-	Deposit operator=(const Deposit& object)
-	{
-		id = object.id;
-		year = object.year;
-		interest = object.interest;
-		tax = object.tax;
-	}
-
-	double Calcurate() const override
-	{
-		double result = money * (formulaConstant + interest / HUNDRED) * year;
-
-		return result;
-	}
-
-private:
-	static const int formulaConstant = 1;
 };
 
 class Account
@@ -875,15 +931,15 @@ public:
 
 	void AYearLater()
 	{
-		annualSalary *= 1 + rateOfSalaryIncrease / HUNDRED;
+		annualSalary *= ONE + rateOfSalaryIncrease / HUNDRED;
 		salary = annualSalary / YEAR2MONTH;
 	}
 
-	bool HasSavings()
+	bool HasSavings() const
 	{
 		return id == savings.GetID();
 	}
-	bool HasDeposit()
+	bool HasDeposit() const
 	{
 		return id == deposit.GetID();
 	}
@@ -936,6 +992,10 @@ public:
 	{
 		return annualSalary;
 	}
+	double GetAmountConsumed() const
+	{
+		return amountConsumed;
+	}
 	Savings GetSavings() const
 	{
 		return savings;
@@ -961,66 +1021,57 @@ class Bank
 public:
 	Bank()
 	{
-		accounts = new Account[0];
+		accounts.resize(0);
 	}
-	Bank(int length)
+	Bank(vector<Account> values)
 	{
-		accounts = new Account[length];
-	}
-	Bank(Account* values)
-	{
-		int length = sizeof(values) / sizeof(Account);
-
-		accounts = new Account[length];
-
-		for (int count = 0; count < length; count++)
-		{
-			accounts[count] = values[count];
-		}
-	}
-	~Bank()
-	{
-		delete[] accounts;
+		accounts = values;
 	}
 
 	void AddAccount(Account account)
 	{
-		int newsize = (sizeof(accounts) + sizeof(Account)) / sizeof(Account);
+		if (OverlapCheck(account)) return;
 
-		int originSize = sizeof(accounts) / sizeof(Account);
-
-		Account* temporary = new Account[newsize];
-
-		for (int count = 0; count < newsize; count++)
+		accounts.push_back(account);
+	}
+	void RemoveAccount(int id)
+	{
+		int count = 0;
+		
+		for (; count < accounts.size(); count++)
 		{
-			if (count < originSize)
-			{
-				temporary[count] = accounts[count];
-			}
-			else
-			{
-				temporary[count] = account;
-			}
+			if (accounts[count].GetID() == id) break;
 		}
 
-		delete[] accounts;
-
-		accounts = temporary;
+		accounts.erase(accounts.begin() + count);
 	}
 
-	Account GetAccount(int number) const
+	Account GetAccount(int number)
 	{
-		if (accounts == nullptr) throw exception();
+		if (accounts.empty()) throw exception();
 
-		int length = sizeof(accounts) / sizeof(Account);
-
-		if (number >= length && number < 0) throw out_of_range(NULL);
+		if (number >= accounts.size() && number < 0) throw out_of_range(NULL);
 	
 		return accounts[number];
 	}
 
 private:
-	Account* accounts = nullptr;
+	vector<Account> accounts;
+
+	bool OverlapCheck(Account value)
+	{
+		int check = 0;
+
+		for (int count = 0; count < accounts.size(); count++)
+		{
+			if (accounts[count].GetID() == value.GetID())
+			{
+				check++;
+			}
+		}
+
+		return check > 0;
+	}
 };
 
 class Insurance
@@ -1049,10 +1100,11 @@ public:
 		return rate;
 	}
 
-	double Calcurate(double value) const
+	double Calcurate(double value)
 	{
 		return value * rate / percentage;
 	}
+
 private:
 	string name = NULL;
 	double rate = 0;
@@ -1085,6 +1137,7 @@ public:
 	{
 		return money;
 	}
+
 private:
 	string name = NULL;
 	double money = 0;
@@ -1095,7 +1148,8 @@ class Tax
 public:
 	Tax() = default;
 
-	Tax(double incomeTax) : incomeTax(incomeTax)
+	Tax(double incomeTax)
+		: incomeTax(incomeTax)
 	{
 		localIncomeTax = incomeTax / TEN;
 	}
@@ -1114,40 +1168,143 @@ public:
 	{
 		return localIncomeTax;
 	}
+
 private:
 	double incomeTax = 0;
 	double localIncomeTax = 0;
 };
 
+class NationalTaxService
+{
+public:
+	NationalTaxService() = default;
+	NationalTaxService(vector<TaxBill> taxBills)
+		: taxBills(taxBills) {}
+
+	void AddTaxBill(TaxBill taxBill)
+	{
+		if (OverlapCheck(taxBill)) return;
+		taxBills.push_back(taxBill);
+	}
+
+	void RemoveTaxBill(int id)
+	{
+		int count = 0;
+
+		for (; count < taxBills.size(); count++)
+		{
+			if (taxBills[count].id == id) break;
+		}
+
+		taxBills.erase(taxBills.begin() + count);
+	}
+
+private:
+	vector<TaxBill> taxBills;
+
+	bool OverlapCheck(TaxBill value)
+	{
+		int check = 0;
+
+		for (int count = 0; count < taxBills.size(); count++)
+		{
+			if (taxBills[count].id == value.id)
+			{
+				check++;
+			}
+		}
+
+		return check > 0;
+	}
+};
+
 class MoneyManager
 {
-	struct ManagementHistory
-	{
-		double moneyOfDepositMature;
-		double moneyOfSavingsMature;
-		double totalAsset;
-	};
-
 public:
 	MoneyManager() = default;
 
 	MoneyManager(int managementPeriod)
-	{
-		// 년도마다 계산하게 만들기
-		this->managementPeriod = managementPeriod;
-	}
+		: managementPeriod(managementPeriod) {}
 
 	void PrintManagementHistory()
 	{
 		// 여기에 계산식 프린트 넣고 아래에 계산해서 배열로 뱉는 함수 만든 뒤에 입력 받고 계산 잘 되는지만 확인하면 끝
+		vector<ManagementHistory> managementHistories = Calcurate();
+
+
 	}
 
-	
-		
+	vector<ManagementHistory> Calcurate()
+	{
+		time_t timer = time(NULL);
+
+		int year = localtime(&timer)->tm_year;
+
+		vector<ManagementHistory> managementHistories;
+
+		for (int count1 = 0; count1 < managementPeriod; count1++)
+		{
+			ManagementHistory managementHistory;
+
+			managementHistory.year = year++;
+
+			managementHistory.salary = account.GetSalary();
+
+			managementHistory.nationalPension = taxBill.nationalPension.Calcurate(managementHistory.salary);
+			managementHistory.healthInsurance = taxBill.healthInsurance.Calcurate(managementHistory.salary);
+			managementHistory.longTermNursingInsurance = taxBill.longTermNursingInsurance.Calcurate(managementHistory.healthInsurance);
+			managementHistory.employmentInsurance = taxBill.employmentInsurance.Calcurate(managementHistory.salary);
+
+			managementHistory.incomeTax = taxBill.tax.GetIncomeTax();
+			managementHistory.localIncomeTax = taxBill.tax.GetLocalIncomeTax();
+
+			for (int count2 = 0; count2 < taxBill.taxFrees.size(); count2++)
+			{
+				managementHistory.totalTaxFree += taxBill.taxFrees[count].GetMoney();
+			}
+
+			managementHistory.salary -= managementHistory.totalTaxFree;
+
+			managementHistory.salary -= managementHistory.nationalPension + managementHistory.healthInsurance + managementHistory.longTermNursingInsurance + managementHistory.employmentInsurance;
+
+			managementHistory.salary -= managementHistory.incomeTax + managementHistory.localIncomeTax;
+
+			managementHistory.salary += managementHistory.totalTaxFree;
+
+			//result = salary;
+
+			double money2Save = managementHistory.salary - account.GetAmountConsumed();
+
+			managementHistory.moneyOfDepositMature = account.GetDeposit().Calcurate();
+			managementHistory.moneyOfSavingsMature = account.GetSavings().Calcurate();
+
+			managementHistories.push_back(managementHistory);
+
+			cout << "-----------------------------------------------------------------------------" << endl;
+			cout << "- 공재액합계 -" << endl;
+			cout << fixed << "국민연금 : " << nationalPension << "원" << endl;
+			cout << fixed << "건강보험 : " << healthInsurance << "원" << endl;
+			cout << fixed << "장기요양 : " << longTermNursingInsurance << "원" << endl;
+			cout << fixed << "고용보험 : " << employmentInsurance << "원" << endl;
+			cout << fixed << "소득세 : " << taxBill.tax.GetIncomeTax() << "원" << endl;
+			cout << fixed << "지방소득세 : " << taxBill.tax.GetLocalIncomeTax() << "원" << endl;
+			cout << fixed << "월 실수령액 : " << salary << "원" << endl;
+			cout << fixed << "\n예금만기수령액 : " <<  << "원" << endl;
+			cout << fixed << "적금만기수령액 : " <<  << "원" << endl;
+			cout << "-----------------------------------------------------------------------------" << endl;
+		}
+	}
+
 private:
-	int managementPeriod;
+	int managementPeriod = 0;
 
 	Account account;
+	TaxBill taxBill;
+
+	bool IsSame() const
+	{
+		return account.GetID() == taxBill.id;
+	}
 };
 
 using namespace Tools;
