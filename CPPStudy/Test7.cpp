@@ -9,44 +9,6 @@ using namespace std;
 #define ONE 1
 #define COMPUTERSTARTYEAR 1900
 
-struct TaxBill
-{
-public:
-	int id = -1;
-
-	Tax tax;
-	
-	vector<TaxFree> taxFrees;
-	
-	Insurance nationalPension;
-	Insurance healthInsurance;
-	Insurance longTermNursingInsurance;
-	Insurance employmentInsurance;
-};
-
-struct ManagementHistory
-{
-public:
-	int year = -1;
-
-	double salary = 0;
-
-	double totalTaxFree = 0;
-
-	double nationalPension = 0;
-	double healthInsurance = 0;
-	double longTermNursingInsurance = 0;
-	double employmentInsurance = 0;
-
-	double incomeTax = 0;
-	double localIncomeTax = 0;
-
-	double moneyOfDepositMature = 0;
-	double moneyOfSavingsMature = 0;
-
-	double totalAsset = 0;
-};
-
 namespace Tools
 {
 	template <typename T>
@@ -70,15 +32,6 @@ namespace Tools
 		return storage;
 	}
 
-	/*template<typename T>
-	vector<T> create_copy(vector<T> const& objects)
-	{
-		vector<T> vector;
-		vector = objects;
-
-		return vector;
-	}*/
-
 	template<typename Key, typename Value>
 	struct KeyValuePair
 	{
@@ -87,7 +40,7 @@ namespace Tools
 	};
 }
 
-namespace IncomeTax
+namespace IncomeTaxManager
 {
 	typedef struct TableStruct
 	{
@@ -758,7 +711,7 @@ namespace IncomeTax
 
 			for (int count = 0; count < tableSize; count++)
 			{
-				if (table[count].start <= wages && table[count].end > wages)
+				if (table[count].start * 10000 <= wages && table[count].end * 10000 > wages)
 				{
 					result = table[count].tax;
 					break;
@@ -766,7 +719,7 @@ namespace IncomeTax
 			}
 			
 			this->result = result;
-
+			//printf("%d\n\n\n", result);
 			return result;
 		}
 
@@ -837,7 +790,7 @@ protected:
 	int year = 0;
 	double money = 0;
 	double interest = 0;
-	double tax = 0;
+	double tax = 15.4;
 };
 
 class Deposit : public SavingMoney // 정기 예금
@@ -852,13 +805,17 @@ public:
 	{
 		id = object.id;
 		year = object.year;
+		money = object.money;
 		interest = object.interest;
 		tax = object.tax;
+
+		return *this;
 	}
 
 	double Calcurate() override
 	{
-		double result = money * (formulaConstant + interest / HUNDRED) * year;
+		double interestAddTax = money * year * interest / HUNDRED * (1 - tax / HUNDRED);
+		double result = money + interestAddTax;
 
 		return result;
 	}
@@ -879,20 +836,23 @@ public:
 	{
 		id = object.id;
 		year = object.year;
+		money = object.money;
 		interest = object.interest;
 		tax = object.tax;
+
+		return *this;
 	}
 
 	double Calcurate() override
 	{
-		int month = year * YEAR2MONTH;
+		double month = (double)year * YEAR2MONTH;
 
 		double totalMoney = money * month;
 
-		double interestAddTax = (interest * (month + formulaConstant1) / formulaConstant2) * (formulaConstant3 - tax / HUNDRED);
+		double interestAddTax = (interest * ((double)month + (double)formulaConstant1) / (double)formulaConstant2) * ((double)formulaConstant3 - tax / HUNDRED);
 
-		double result = totalMoney * (formulaConstant4 + interestAddTax / HUNDRED);
-
+		double result = totalMoney * ((double)formulaConstant4 + interestAddTax / HUNDRED);
+		
 		return result;
 	}
 
@@ -1007,13 +967,13 @@ public:
 
 private:
 	int id = 0;
-	string name = NULL;
+	string name;
 	double annualSalary = 0;
 	double salary = 0;
 	double rateOfSalaryIncrease = 0;
 	double amountConsumed = 0;
-	Savings savings = Savings();
-	Deposit deposit = Deposit();
+	Savings savings;
+	Deposit deposit;
 };
 
 class Bank
@@ -1106,7 +1066,7 @@ public:
 	}
 
 private:
-	string name = NULL;
+	string name;
 	double rate = 0;
 
 	static const int percentage = 100;
@@ -1174,6 +1134,21 @@ private:
 	double localIncomeTax = 0;
 };
 
+struct TaxBill
+{
+public:
+	int id = -1;
+
+	Tax tax;
+
+	vector<TaxFree> taxFrees;
+
+	Insurance nationalPension;
+	Insurance healthInsurance;
+	Insurance longTermNursingInsurance;
+	Insurance employmentInsurance;
+};
+
 class NationalTaxService
 {
 public:
@@ -1218,6 +1193,29 @@ private:
 	}
 };
 
+struct ManagementHistory
+{
+public:
+	int year = -1;
+
+	double salary = 0;
+
+	double totalTaxFree = 0;
+
+	double nationalPension = 0;
+	double healthInsurance = 0;
+	double longTermNursingInsurance = 0;
+	double employmentInsurance = 0;
+
+	double incomeTax = 0;
+	double localIncomeTax = 0;
+
+	double moneyOfDepositMature = 0;
+	double moneyOfSavingsMature = 0;
+
+	double totalAsset = 0;
+};
+
 class MoneyManager
 {
 public:
@@ -1228,17 +1226,40 @@ public:
 
 	void PrintManagementHistory()
 	{
-		// 여기에 계산식 프린트 넣고 아래에 계산해서 배열로 뱉는 함수 만든 뒤에 입력 받고 계산 잘 되는지만 확인하면 끝
+		if (!IsSame()) return;
+
 		vector<ManagementHistory> managementHistories = Calcurate();
 
-
+		for (int count = 0; count < managementHistories.size(); count++)
+		{
+			cout << "-----------------------------------------------------------------------------" << endl;
+			cout << "- 공재액합계 -" << endl;
+			cout << fixed << "국민연금 = " << managementHistories[count].nationalPension << "원" << endl;
+			cout << fixed << "건강보험 = " << managementHistories[count].healthInsurance << "원" << endl;
+			cout << fixed << "장기요양 = " << managementHistories[count].longTermNursingInsurance << "원" << endl;
+			cout << fixed << "고용보험 = " << managementHistories[count].employmentInsurance << "원" << endl;
+			cout << fixed << "소득세 = " << managementHistories[count].incomeTax << "원" << endl;
+			cout << fixed << "지방소득세 = " << managementHistories[count].localIncomeTax << "원" << endl;
+			cout << fixed << "월 실수령액 = " << managementHistories[count].salary << "원" << endl;
+			cout << fixed << "\n예금만기수령액 : " << managementHistories[count].moneyOfDepositMature << "원" << endl;
+			cout << fixed << "적금만기수령액 : " << managementHistories[count].moneyOfSavingsMature << "원" << endl;
+			cout << fixed << managementHistories[count].year << "년 총 자산은 " << managementHistories[count].totalAsset << "원" << endl;
+		}
 	}
 
 	vector<ManagementHistory> Calcurate()
 	{
-		time_t timer = time(NULL);
+		if (!IsSame()) throw exception();
 
-		int year = localtime(&timer)->tm_year;
+		time_t timer;
+		struct tm t;
+
+		timer = time(NULL);
+		localtime_s(&t, &timer);
+
+		int year = localtime_s(&t,&timer) + COMPUTERSTARTYEAR;
+
+		double money2Save = 0;
 
 		vector<ManagementHistory> managementHistories;
 
@@ -1250,49 +1271,75 @@ public:
 
 			managementHistory.salary = account.GetSalary();
 
-			managementHistory.nationalPension = taxBill.nationalPension.Calcurate(managementHistory.salary);
-			managementHistory.healthInsurance = taxBill.healthInsurance.Calcurate(managementHistory.salary);
-			managementHistory.longTermNursingInsurance = taxBill.longTermNursingInsurance.Calcurate(managementHistory.healthInsurance);
-			managementHistory.employmentInsurance = taxBill.employmentInsurance.Calcurate(managementHistory.salary);
-
 			managementHistory.incomeTax = taxBill.tax.GetIncomeTax();
 			managementHistory.localIncomeTax = taxBill.tax.GetLocalIncomeTax();
 
 			for (int count2 = 0; count2 < taxBill.taxFrees.size(); count2++)
 			{
-				managementHistory.totalTaxFree += taxBill.taxFrees[count].GetMoney();
+				managementHistory.totalTaxFree += taxBill.taxFrees[count2].GetMoney();
 			}
-
+			
 			managementHistory.salary -= managementHistory.totalTaxFree;
+
+			managementHistory.nationalPension = taxBill.nationalPension.Calcurate(managementHistory.salary);
+			managementHistory.healthInsurance = taxBill.healthInsurance.Calcurate(managementHistory.salary);
+			managementHistory.longTermNursingInsurance = taxBill.longTermNursingInsurance.Calcurate(managementHistory.healthInsurance);
+			managementHistory.employmentInsurance = taxBill.employmentInsurance.Calcurate(managementHistory.salary);
 
 			managementHistory.salary -= managementHistory.nationalPension + managementHistory.healthInsurance + managementHistory.longTermNursingInsurance + managementHistory.employmentInsurance;
 
 			managementHistory.salary -= managementHistory.incomeTax + managementHistory.localIncomeTax;
 
 			managementHistory.salary += managementHistory.totalTaxFree;
+			
+			money2Save = managementHistory.salary - account.GetAmountConsumed();
 
-			//result = salary;
+			Savings savings = account.GetSavings();
+			savings.SetMoney(money2Save);
+			account.SetSavings(savings);
 
-			double money2Save = managementHistory.salary - account.GetAmountConsumed();
-
-			managementHistory.moneyOfDepositMature = account.GetDeposit().Calcurate();
 			managementHistory.moneyOfSavingsMature = account.GetSavings().Calcurate();
+			managementHistory.moneyOfDepositMature = account.GetDeposit().Calcurate();
+
+			managementHistory.totalAsset = managementHistory.moneyOfDepositMature + managementHistory.moneyOfSavingsMature;
 
 			managementHistories.push_back(managementHistory);
 
-			cout << "-----------------------------------------------------------------------------" << endl;
-			cout << "- 공재액합계 -" << endl;
-			cout << fixed << "국민연금 : " << nationalPension << "원" << endl;
-			cout << fixed << "건강보험 : " << healthInsurance << "원" << endl;
-			cout << fixed << "장기요양 : " << longTermNursingInsurance << "원" << endl;
-			cout << fixed << "고용보험 : " << employmentInsurance << "원" << endl;
-			cout << fixed << "소득세 : " << taxBill.tax.GetIncomeTax() << "원" << endl;
-			cout << fixed << "지방소득세 : " << taxBill.tax.GetLocalIncomeTax() << "원" << endl;
-			cout << fixed << "월 실수령액 : " << salary << "원" << endl;
-			cout << fixed << "\n예금만기수령액 : " <<  << "원" << endl;
-			cout << fixed << "적금만기수령액 : " <<  << "원" << endl;
-			cout << "-----------------------------------------------------------------------------" << endl;
+			account.AYearLater();
+
+			Deposit deposit = account.GetDeposit();
+			deposit.SetMoney(deposit.GetMoney() + managementHistory.moneyOfSavingsMature);
+			
+			account.SetDeposit(deposit);
 		}
+
+		return managementHistories;
+	}
+
+	void SetManagementPeriod(int value)
+	{
+		managementPeriod = value;
+	}
+	void SetAccount(Account value)
+	{
+		account = value;
+	}
+	void SetTaxBill(TaxBill value)
+	{
+		taxBill = value;
+	}
+
+	int GetManagementPeriod() const
+	{
+		return managementPeriod;
+	}
+	Account GetAccount() const
+	{
+		return account;
+	}
+	TaxBill GetTaxBill() const
+	{
+		return taxBill;
 	}
 
 private:
@@ -1308,11 +1355,62 @@ private:
 };
 
 using namespace Tools;
-using namespace IncomeTax;
+using namespace IncomeTaxManager;
 
 int main()
 {
+	int id = 1;
+	string name = "익명";
+
+	Bank bank;
+	NationalTaxService nationalTaxService;
+	MoneyManager moneyManager(10);
+
+	Account myAccount;
+	TaxBill taxBill;
+
+	myAccount.SetID(id);
+	myAccount.SetName(name);
+	myAccount.SetAnnualSalary(Input<double>("연봉을 입력하세요 : "));
 	
+	myAccount.SetRateOfSalaryIncrease(Input<double>("연봉인상율(%) : "));
+	
+	TaxFree taxFree("비과세", Input<double>("비과세액을 입력하세요 : "));
+	taxBill.taxFrees.push_back(taxFree);
+
+	cout << "1개월 총 소비액은 1300000원으로 고정" << endl;
+	myAccount.SetAmountConsumed(1300000);
+
+	Savings savings;
+	savings.SetInterest(Input<double>("적금이자율(%) : "));
+	savings.SetID(id);
+	savings.SetYear(1);
+	Deposit deposit;
+	deposit.SetInterest(Input<double>("예금이자율(%) : "));
+	deposit.SetID(id);
+	deposit.SetYear(1);
+
+	myAccount.SetDeposit(deposit);
+	myAccount.SetSavings(savings);
+
+
+	taxBill.id = id;
+	taxBill.nationalPension.SetName("국민연금");
+	taxBill.nationalPension.SetRate(4.5);
+	taxBill.healthInsurance.SetName("건강보험");
+	taxBill.healthInsurance.SetRate(3.495);
+	taxBill.longTermNursingInsurance.SetName("장기요양보험");
+	taxBill.longTermNursingInsurance.SetRate(12.27);
+	taxBill.employmentInsurance.SetName("고용보험");
+	taxBill.employmentInsurance.SetRate(0.9);
+	taxBill.tax.SetIncomeTax(IncomeTax().Calcurate(myAccount.GetAnnualSalary()));
+
+	nationalTaxService.AddTaxBill(taxBill);
+
+	moneyManager.SetAccount(myAccount);
+	moneyManager.SetTaxBill(taxBill);
+
+	moneyManager.PrintManagementHistory();
 
 	return 0;
 }
