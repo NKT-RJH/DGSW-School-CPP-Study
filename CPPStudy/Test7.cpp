@@ -1,6 +1,9 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <iostream>
 #include <vector>
 #include <ctime>
+
 using namespace std;
 
 #define YEAR2MONTH 12
@@ -711,7 +714,7 @@ namespace IncomeTaxManager
 
 			for (int count = 0; count < tableSize; count++)
 			{
-				if (table[count].start * 10000 <= wages && table[count].end * 10000 > wages)
+				if (table[count].start * 1000 <= wages && table[count].end * 1000 > wages)
 				{
 					result = table[count].tax;
 					break;
@@ -732,6 +735,9 @@ namespace IncomeTaxManager
 		int result = 0;
 	};
 }
+
+using namespace Tools;
+using namespace IncomeTaxManager;
 
 class SavingMoney
 {
@@ -1251,13 +1257,8 @@ public:
 	{
 		if (!IsSame()) throw exception();
 
-		time_t timer;
-		struct tm t;
-
-		timer = time(NULL);
-		localtime_s(&t, &timer);
-
-		int year = localtime_s(&t,&timer) + COMPUTERSTARTYEAR;
+		time_t timer = time(NULL);
+		int year = localtime(&timer)->tm_year + COMPUTERSTARTYEAR + ONE;
 
 		double money2Save = 0;
 
@@ -1271,15 +1272,16 @@ public:
 
 			managementHistory.salary = account.GetSalary();
 
-			managementHistory.incomeTax = taxBill.tax.GetIncomeTax();
-			managementHistory.localIncomeTax = taxBill.tax.GetLocalIncomeTax();
-
 			for (int count2 = 0; count2 < taxBill.taxFrees.size(); count2++)
 			{
 				managementHistory.totalTaxFree += taxBill.taxFrees[count2].GetMoney();
 			}
 			
 			managementHistory.salary -= managementHistory.totalTaxFree;
+			
+			taxBill.tax.SetIncomeTax(IncomeTax().Calcurate(account.GetSalary()));
+			managementHistory.incomeTax = taxBill.tax.GetIncomeTax();
+			managementHistory.localIncomeTax = taxBill.tax.GetLocalIncomeTax();
 
 			managementHistory.nationalPension = taxBill.nationalPension.Calcurate(managementHistory.salary);
 			managementHistory.healthInsurance = taxBill.healthInsurance.Calcurate(managementHistory.salary);
@@ -1354,9 +1356,7 @@ private:
 	}
 };
 
-using namespace Tools;
-using namespace IncomeTaxManager;
-
+// 한 곳에서 중앙집권으로 하지 말고 다른 클래스에서도 계산을 한 것을 그냥 사용한다는 느낌으로 변경한다.
 int main()
 {
 	int id = 1;
@@ -1364,7 +1364,7 @@ int main()
 
 	Bank bank;
 	NationalTaxService nationalTaxService;
-	MoneyManager moneyManager(10);
+	MoneyManager moneyManager(11);
 
 	Account myAccount;
 	TaxBill taxBill;
@@ -1403,7 +1403,6 @@ int main()
 	taxBill.longTermNursingInsurance.SetRate(12.27);
 	taxBill.employmentInsurance.SetName("고용보험");
 	taxBill.employmentInsurance.SetRate(0.9);
-	taxBill.tax.SetIncomeTax(IncomeTax().Calcurate(myAccount.GetAnnualSalary()));
 
 	nationalTaxService.AddTaxBill(taxBill);
 
